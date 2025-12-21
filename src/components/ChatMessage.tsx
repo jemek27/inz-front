@@ -13,6 +13,11 @@ interface ChatMessageProps {
 export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, dateTime }) => {
   const isUser = role === 'USER';
 
+  // Jeśli content jest puste lub undefined, nie renderuj
+  if (!content || content.trim() === '') {
+    return null;
+  }
+
   return (
     <div className={`flex gap-4 p-4 ${isUser ? 'bg-transparent' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
       <div className="flex-shrink-0">

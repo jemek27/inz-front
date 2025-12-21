@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatContainer } from './components/ChatContainer';
 import { ChatInput } from './components/ChatInput';
 import { PendingApprovals } from './components/PendingApprovals';
 import { EmbeddingsManager } from './components/EmbeddingsManager';
-import { HistoryViewer } from './components/HistoryViewer';
 import { ApprovalModal } from './components/ApprovalModal';
 import { chatApi } from './api';
-import type { ChatMessageDto, UserRole, HistoryMode, PendingToolCallDto } from './types';
+import { HistoryMode } from './types';
+import type { ChatMessageDto, UserRole, PendingToolCallDto } from './types';
 
-type View = 'chat' | 'history' | 'approvals' | 'embeddings';
+type View = 'chat' | 'approvals' | 'embeddings';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<View>('chat');
   const [role, setRole] = useState<UserRole>('employee');
-  const [historyMode, setHistoryMode] = useState<HistoryMode>('STANDARD');
+  const [historyMode, setHistoryMode] = useState<HistoryMode>(HistoryMode.STANDARD);
   const [messages, setMessages] = useState<ChatMessageDto[]>([]);
-  const [historyMessages, setHistoryMessages] = useState<ChatMessageDto[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<PendingToolCallDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -29,6 +28,8 @@ function App() {
     return saved || `user-${role}`;
   });
   const [currentApproval, setCurrentApproval] = useState<PendingToolCallDto | null>(null);
+  const [conversations, setConversations] = useState<number[]>([]);
+  const [currentConversation, setCurrentConversation] = useState<number>(1);
 
   // Save userId to localStorage whenever it changes
   useEffect(() => {
@@ -45,16 +46,32 @@ function App() {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // Load chat history on mount and when role or userId changes
+  // Load chat history on mount and when userId or conversationId changes
   useEffect(() => {
-    console.log('🔄 UserId changed to:', userId);
+    console.log('🔄 Loading conversations for userId:', userId);
     const loadData = async () => {
       try {
-        const history = await chatApi.getHistory(userId);
-        setHistoryMessages(history);
-        setMessages(history);
+        // Load conversation IDs
+        const convIds = await chatApi.getConversationIds(userId);
+        console.log('📋 Available conversations:', convIds);
+        setConversations(convIds);
+        
+        // If there are conversations, load the current one
+        if (convIds.length > 0) {
+          // If current conversation doesn't exist, select the first one
+          const convToLoad = convIds.includes(currentConversation) ? currentConversation : convIds[0];
+          setCurrentConversation(convToLoad);
+          
+          const history = await chatApi.getHistory(userId, convToLoad);
+          console.log('📜 Loaded history:', history);
+          setMessages(history);
+        } else {
+          // No conversations yet, start with conversation 1
+          setCurrentConversation(1);
+          setMessages([]);
+        }
       } catch (error) {
-        console.error('Failed to load chat history:', error);
+        console.error('Failed to load conversations:', error);
       }
 
       try {
@@ -67,7 +84,7 @@ function App() {
     };
 
     loadData();
-  }, [userId]); // Używamy userId bezpośrednio
+  }, [userId]); // Reload when userId changes
 
   // Poll for pending approvals every 10 seconds
   useEffect(() => {
@@ -101,8 +118,8 @@ function App() {
 
   const loadChatHistory = async () => {
     try {
-      const history = await chatApi.getHistory(userId);
-      setHistoryMessages(history);
+      const history = await chatApi.getHistory(userId, currentConversation);
+      console.log('📜 Loaded chat history:', history);
       setMessages(history);
     } catch (error) {
       console.error('Failed to load chat history:', error);
@@ -136,6 +153,7 @@ function App() {
     try {
       const response = await chatApi.sendMessage(role, {
         userId,
+        conversationId: currentConversation,
         message,
         historyMode,
       });
@@ -191,6 +209,30 @@ function App() {
     }
   };
 
+  const handleConversationChange = async (conversationId: number) => {
+    setCurrentConversation(conversationId);
+    setCurrentView('chat'); // Przełącz na widok czatu
+    try {
+      const history = await chatApi.getHistory(userId, conversationId);
+      console.log('📜 Loaded conversation history:', history);
+      setMessages(history);
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+      setMessages([]);
+    }
+  };
+
+  const handleNewConversation = async () => {
+    // Calculate next conversation ID (max + 1)
+    const nextId = conversations.length > 0 ? Math.max(...conversations) + 1 : 1;
+    setCurrentConversation(nextId);
+    setMessages([]);
+    
+    // Update conversations list
+    const updatedConversations = [...conversations, nextId];
+    setConversations(updatedConversations);
+  };
+
   const handleApproveFromModal = async () => {
     if (currentApproval) {
       await handleApprove(currentApproval.id);
@@ -212,7 +254,8 @@ function App() {
   };
 
   const handleShowHistory = () => {
-    setCurrentView('history');
+    // Po prostu przełącz na widok czatu i załaduj historię
+    setCurrentView('chat');
     loadChatHistory();
   };
 
@@ -227,16 +270,6 @@ function App() {
               disabled={isLoading}
               placeholder="Wpisz wiadomość..."
             />
-          </div>
-        );
-
-      case 'history':
-        return (
-          <div className="flex-1 overflow-y-auto p-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-              Historia czatu
-            </h2>
-            <HistoryViewer messages={historyMessages} />
           </div>
         );
 
@@ -258,10 +291,11 @@ function App() {
         return (
           <div className="flex-1 overflow-y-auto p-6">
             <EmbeddingsManager
+              userId={userId}
               onReindex={() => chatApi.reindexEmbeddings()}
-              onIndexConversation={(id) => chatApi.indexConversation(id)}
+              onIndexUser={(uid) => chatApi.indexUserEmbeddings(uid)}
               onIndexAll={() => chatApi.indexAllConversations()}
-              onDeleteConversation={(id) => chatApi.deleteConversationEmbeddings(id)}
+              onDeleteUserEmbeddings={(uid) => chatApi.deleteUserEmbeddings(uid)}
             />
           </div>
         );
@@ -288,6 +322,10 @@ function App() {
         onDarkModeToggle={() => setDarkMode(!darkMode)}
         userId={userId}
         onUserIdChange={setUserId}
+        conversations={conversations}
+        currentConversation={currentConversation}
+        onConversationChange={handleConversationChange}
+        onNewConversation={handleNewConversation}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -313,8 +351,7 @@ function App() {
               </svg>
             </button>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {currentView === 'chat' && 'Czat'}
-              {currentView === 'history' && 'Historia'}
+              {currentView === 'chat' && `Czat - Konwersacja #${currentConversation}`}
               {currentView === 'approvals' && 'Zatwierdzenia'}
               {currentView === 'embeddings' && 'Embeddings'}
             </h2>

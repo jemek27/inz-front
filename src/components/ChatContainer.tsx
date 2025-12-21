@@ -30,12 +30,12 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoadin
         </div>
       ) : (
         <div>
-          {messages.map((message, index) => (
+          {messages.map((msg, index) => (
             <ChatMessage
               key={index}
-              role={message.role}
-              content={message.content}
-              dateTime={message.dateTime}
+              role={msg.role}
+              content={msg.content}
+              dateTime={msg.dateTime}
             />
           ))}
           {isLoading && (

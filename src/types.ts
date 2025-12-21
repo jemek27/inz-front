@@ -1,11 +1,13 @@
 export enum HistoryMode {
   STANDARD = 'STANDARD',
   FULL = 'FULL',
-  RAG = 'RAG'
+  RAG_CONVERSATION = 'RAG_CONVERSATION',
+  RAG_FULL = 'RAG_FULL'
 }
 
 export interface ChatRequest {
   userId: string;
+  conversationId: number;
   message: string;
   historyMode?: HistoryMode;
 }

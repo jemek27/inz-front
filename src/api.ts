@@ -34,9 +34,15 @@ export const chatApi = {
     return response.data;
   },
 
-  // Get chat history
-  getHistory: async (userId: string): Promise<ChatMessageDto[]> => {
-    const response = await api.get<ChatMessageDto[]>(`/chat/history/${userId}`);
+  // Get chat history by conversation
+  getHistory: async (userId: string, conversationId: number): Promise<ChatMessageDto[]> => {
+    const response = await api.get<ChatMessageDto[]>(`/chat/history/${userId}/${conversationId}`);
+    return response.data;
+  },
+
+  // Get all conversation IDs for user
+  getConversationIds: async (userId: string): Promise<number[]> => {
+    const response = await api.get<number[]>(`/chat/conversation-ids/${userId}`);
     return response.data;
   },
 
@@ -62,19 +68,21 @@ export const chatApi = {
     return response.data;
   },
 
-  // Chat history embeddings
-  indexConversation: async (conversationId: string): Promise<any> => {
-    const response = await api.post(`/api/chat-history-embeddings/index/${conversationId}`);
+  // Chat history embeddings - Index all conversations for a user
+  indexUserEmbeddings: async (userId: string): Promise<any> => {
+    const response = await api.post(`/api/chat-history-embeddings/index/user/${userId}`);
     return response.data;
   },
 
+  // Index all users' chat history
   indexAllConversations: async (): Promise<any> => {
     const response = await api.post('/api/chat-history-embeddings/index-all');
     return response.data;
   },
 
-  deleteConversationEmbeddings: async (conversationId: string): Promise<any> => {
-    const response = await api.delete(`/api/chat-history-embeddings/${conversationId}`);
+  // Delete all embeddings for a user
+  deleteUserEmbeddings: async (userId: string): Promise<any> => {
+    const response = await api.delete(`/api/chat-history-embeddings/user/${userId}`);
     return response.data;
   },
 };

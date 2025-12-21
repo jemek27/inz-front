@@ -12,6 +12,7 @@ import {
   Briefcase,
   Users,
 } from 'lucide-react';
+import ConversationSelector from './ConversationSelector';
 import type { UserRole, HistoryMode } from '../types';
 
 interface SidebarProps {
@@ -29,6 +30,10 @@ interface SidebarProps {
   onDarkModeToggle: () => void;
   userId: string;
   onUserIdChange: (userId: string) => void;
+  conversations: number[];
+  currentConversation: number;
+  onConversationChange: (id: number) => void;
+  onNewConversation: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -46,6 +51,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDarkModeToggle,
   userId,
   onUserIdChange,
+  conversations,
+  currentConversation,
+  onConversationChange,
+  onNewConversation,
 }) => {
   const [showSettings, setShowSettings] = useState(false);
 
@@ -110,6 +119,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
+          {/* Conversation Selector */}
+          <ConversationSelector
+            conversations={conversations}
+            currentConversation={currentConversation}
+            onConversationChange={onConversationChange}
+            onNewConversation={onNewConversation}
+            darkMode={darkMode}
+          />
+
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
             <button
@@ -163,8 +181,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <option value="STANDARD">Standard (20 wiadomości)</option>
                     <option value="FULL">Pełna historia</option>
-                    <option value="RAG">RAG (20 + kontekst)</option>
+                    <option value="RAG_CONVERSATION">RAG z konwersacji</option>
+                    <option value="RAG_FULL">RAG z wszystkich konwersacji</option>
                   </select>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    RAG: wyszukiwanie semantyczne w historii
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between">
