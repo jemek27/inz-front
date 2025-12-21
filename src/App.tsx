@@ -5,6 +5,7 @@ import { ChatInput } from './components/ChatInput';
 import { PendingApprovals } from './components/PendingApprovals';
 import { EmbeddingsManager } from './components/EmbeddingsManager';
 import { HistoryViewer } from './components/HistoryViewer';
+import { ApprovalModal } from './components/ApprovalModal';
 import { chatApi } from './api';
 import type { ChatMessageDto, UserRole, HistoryMode, PendingToolCallDto } from './types';
 
@@ -23,8 +24,16 @@ function App() {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
+  const [userId, setUserId] = useState(() => {
+    const saved = localStorage.getItem('userId');
+    return saved || `user-${role}`;
+  });
+  const [currentApproval, setCurrentApproval] = useState<PendingToolCallDto | null>(null);
 
-  const userId = `user-${role}`;
+  // Save userId to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('userId', userId);
+  }, [userId]);
 
   // Apply dark mode
   useEffect(() => {
@@ -36,19 +45,59 @@ function App() {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // Load chat history on mount and when role changes
+  // Load chat history on mount and when role or userId changes
   useEffect(() => {
-    loadChatHistory();
-    loadPendingApprovals();
-  }, [role]);
+    console.log('🔄 UserId changed to:', userId);
+    const loadData = async () => {
+      try {
+        const history = await chatApi.getHistory(userId);
+        setHistoryMessages(history);
+        setMessages(history);
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+      }
+
+      try {
+        const approvals = await chatApi.getPendingApprovals(userId);
+        console.log('✅ Initial load - approvals:', approvals.length);
+        setPendingApprovals(approvals);
+      } catch (error) {
+        console.error('Failed to load pending approvals:', error);
+      }
+    };
+
+    loadData();
+  }, [userId]); // Używamy userId bezpośrednio
 
   // Poll for pending approvals every 10 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      loadPendingApprovals();
+    console.log('⏰ Setting up polling for userId:', userId);
+    const interval = setInterval(async () => {
+      console.log('⏰ Polling approvals...');
+      try {
+        const approvals = await chatApi.getPendingApprovals(userId);
+        console.log('⏰ Poll result:', approvals.length, 'approvals');
+        setPendingApprovals(approvals);
+      } catch (error) {
+        console.error('Failed to load pending approvals:', error);
+      }
     }, 10000);
-    return () => clearInterval(interval);
-  }, [role]);
+    return () => {
+      console.log('🛑 Clearing polling interval');
+      clearInterval(interval);
+    };
+  }, [userId]); // Zmieniono z [role] na [userId]
+
+  // Show modal automatically when new approval appears
+  useEffect(() => {
+    console.log('🔔 Pending approvals changed:', pendingApprovals.length, 'approvals');
+    console.log('🔔 Current approval:', currentApproval ? currentApproval.id : 'none');
+    
+    if (pendingApprovals.length > 0 && !currentApproval) {
+      console.log('✅ Showing modal for approval:', pendingApprovals[0].toolName);
+      setCurrentApproval(pendingApprovals[0]);
+    }
+  }, [pendingApprovals, currentApproval]);
 
   const loadChatHistory = async () => {
     try {
@@ -61,11 +110,16 @@ function App() {
   };
 
   const loadPendingApprovals = async () => {
+    console.log('📡 Loading pending approvals for userId:', userId);
     try {
       const approvals = await chatApi.getPendingApprovals(userId);
+      console.log('✅ Loaded approvals:', approvals.length, 'approvals');
+      if (approvals.length > 0) {
+        console.log('📋 Approvals:', approvals.map(a => ({ id: a.id, tool: a.toolName })));
+      }
       setPendingApprovals(approvals);
     } catch (error) {
-      console.error('Failed to load pending approvals:', error);
+      console.error('❌ Failed to load pending approvals:', error);
     }
   };
 
@@ -86,9 +140,15 @@ function App() {
         historyMode,
       });
 
+      // Czyszczenie odpowiedzi z "USER:", "ASSISTANT:", "Asysten:" itp.
+      let cleanedResponse = response;
+      cleanedResponse = cleanedResponse.replace(/^(USER|ASSISTANT|Asysten):\s*/gi, '');
+      // Usuń także z środka tekstu jeśli występują na początku linii
+      cleanedResponse = cleanedResponse.replace(/\n(USER|ASSISTANT|Asysten):\s*/gi, '\n');
+
       const assistantMessage: ChatMessageDto = {
         role: 'ASSISTANT',
-        content: response,
+        content: cleanedResponse.trim(),
         dateTime: new Date().toISOString(),
       };
 
@@ -128,6 +188,20 @@ function App() {
       await loadPendingApprovals();
     } catch (error) {
       console.error('Failed to reject tool:', error);
+    }
+  };
+
+  const handleApproveFromModal = async () => {
+    if (currentApproval) {
+      await handleApprove(currentApproval.id);
+      setCurrentApproval(null);
+    }
+  };
+
+  const handleRejectFromModal = async () => {
+    if (currentApproval) {
+      await handleReject(currentApproval.id);
+      setCurrentApproval(null);
     }
   };
 
@@ -212,6 +286,8 @@ function App() {
         pendingCount={pendingApprovals.length}
         darkMode={darkMode}
         onDarkModeToggle={() => setDarkMode(!darkMode)}
+        userId={userId}
+        onUserIdChange={setUserId}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -249,6 +325,14 @@ function App() {
         {/* Content */}
         {renderContent()}
       </div>
+
+      {/* Approval Modal */}
+      <ApprovalModal
+        approval={currentApproval}
+        onApprove={handleApproveFromModal}
+        onReject={handleRejectFromModal}
+        onClose={() => setCurrentApproval(null)}
+      />
     </div>
   );
 }

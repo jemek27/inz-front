@@ -27,6 +27,8 @@ interface SidebarProps {
   pendingCount: number;
   darkMode: boolean;
   onDarkModeToggle: () => void;
+  userId: string;
+  onUserIdChange: (userId: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -42,6 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pendingCount,
   darkMode,
   onDarkModeToggle,
+  userId,
+  onUserIdChange,
 }) => {
   const [showSettings, setShowSettings] = useState(false);
 
@@ -180,9 +184,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Footer */}
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-              <User size={18} />
-              <span>ID: user-{role}</span>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                <User size={16} />
+                User ID (Developer)
+              </label>
+              <input
+                type="text"
+                value={userId}
+                onChange={(e) => onUserIdChange(e.target.value)}
+                placeholder="user-employee"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Zmień ID użytkownika dla testów
+              </p>
             </div>
           </div>
         </div>
