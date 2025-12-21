@@ -253,12 +253,6 @@ function App() {
     setCurrentView('chat');
   };
 
-  const handleShowHistory = () => {
-    // Po prostu przełącz na widok czatu i załaduj historię
-    setCurrentView('chat');
-    loadChatHistory();
-  };
-
   const renderContent = () => {
     switch (currentView) {
       case 'chat':
@@ -314,7 +308,6 @@ function App() {
         onRoleChange={handleRoleChange}
         historyMode={historyMode}
         onHistoryModeChange={setHistoryMode}
-        onShowHistory={handleShowHistory}
         onShowApprovals={() => setCurrentView('approvals')}
         onShowEmbeddings={() => setCurrentView('embeddings')}
         pendingCount={pendingApprovals.length}
