@@ -6,13 +6,12 @@ import type { ChatMessageDto } from '../types';
 
 interface HistoryViewerProps {
   messages: ChatMessageDto[];
-  currentUserId: string;
 }
 
-export const HistoryViewer: React.FC<HistoryViewerProps> = ({ messages, currentUserId }) => {
+export const HistoryViewer: React.FC<HistoryViewerProps> = ({ messages }) => {
   // Funkcja do określenia czy wiadomość jest od użytkownika
   const isUserMessage = (msg: ChatMessageDto) => {
-    return msg.userId === currentUserId || msg.userId.toUpperCase() === 'USER';
+    return msg.role === 'USER';
   };
 
   if (messages.length === 0) {
@@ -47,7 +46,7 @@ export const HistoryViewer: React.FC<HistoryViewerProps> = ({ messages, currentU
               </span>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-              {msg.message}
+              {msg.content}
             </p>
           </div>
         );
