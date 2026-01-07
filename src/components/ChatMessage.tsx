@@ -42,7 +42,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, dateTim
             </span>
           )}
         </div>
-        <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100">
           <ReactMarkdown>{content}</ReactMarkdown>
         </div>
       </div>

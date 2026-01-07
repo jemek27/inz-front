@@ -59,6 +59,11 @@ body {
 /* Prose styles for markdown */
 .prose {
   max-width: 100%;
+  color: #1f2937; /* gray-800 - domyślny kolor tekstu dla light mode */
+}
+
+.dark .prose {
+  color: #f3f4f6; /* gray-100 - kolor tekstu dla dark mode */
 }
 
 .prose p {
