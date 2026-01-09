@@ -16,6 +16,7 @@ function App() {
   const [currentView, setCurrentView] = useState<View>('chat');
   const [role, setRole] = useState<UserRole>('employee');
   const [historyMode, setHistoryMode] = useState<HistoryMode>(HistoryMode.STANDARD);
+  const [ragEnabled, setRagEnabled] = useState(false);
   const [messages, setMessages] = useState<ChatMessageDto[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<PendingToolCallDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -156,6 +157,7 @@ function App() {
         conversationId: currentConversation,
         message,
         historyMode,
+        ragEnabled,
       });
 
       // Czyszczenie odpowiedzi z "USER:", "ASSISTANT:", "Asysten:" itp.
@@ -308,6 +310,8 @@ function App() {
         onRoleChange={handleRoleChange}
         historyMode={historyMode}
         onHistoryModeChange={setHistoryMode}
+        ragEnabled={ragEnabled}
+        onRagEnabledChange={setRagEnabled}
         onShowApprovals={() => setCurrentView('approvals')}
         onShowEmbeddings={() => setCurrentView('embeddings')}
         pendingCount={pendingApprovals.length}

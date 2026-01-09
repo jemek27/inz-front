@@ -21,6 +21,8 @@ interface SidebarProps {
   onRoleChange: (role: UserRole) => void;
   historyMode: HistoryMode;
   onHistoryModeChange: (mode: HistoryMode) => void;
+  ragEnabled: boolean;
+  onRagEnabledChange: (enabled: boolean) => void;
   onShowApprovals: () => void;
   onShowEmbeddings: () => void;
   pendingCount: number;
@@ -41,6 +43,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRoleChange,
   historyMode,
   onHistoryModeChange,
+  ragEnabled,
+  onRagEnabledChange,
   onShowApprovals,
   onShowEmbeddings,
   pendingCount,
@@ -176,6 +180,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     RAG: wyszukiwanie semantyczne w historii
                   </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide cursor-pointer">
+                    RAG włączony
+                  </label>
+                  <input
+                    type="checkbox"
+                    checked={ragEnabled}
+                    onChange={(e) => onRagEnabledChange(e.target.checked)}
+                    className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                  />
                 </div>
 
                 <div className="flex items-center justify-between">

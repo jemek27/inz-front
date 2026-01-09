@@ -10,6 +10,7 @@ export interface ChatRequest {
   conversationId: number;
   message: string;
   historyMode?: HistoryMode;
+  ragEnabled?: boolean;
 }
 
 export interface ChatMessageDto {

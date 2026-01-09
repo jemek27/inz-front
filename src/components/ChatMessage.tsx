@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { User, Bot } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -43,7 +44,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, dateTim
           )}
         </div>
         <div className="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100">
-          <ReactMarkdown>{content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
         </div>
       </div>
     </div>
