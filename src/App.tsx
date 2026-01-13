@@ -47,27 +47,19 @@ function App() {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // Load chat history on mount and when userId or conversationId changes
   useEffect(() => {
-    console.log('🔄 Loading conversations for userId:', userId);
     const loadData = async () => {
       try {
-        // Load conversation IDs
         const convIds = await chatApi.getConversationIds(userId);
-        console.log('📋 Available conversations:', convIds);
         setConversations(convIds);
         
-        // If there are conversations, load the current one
         if (convIds.length > 0) {
-          // If current conversation doesn't exist, select the first one
           const convToLoad = convIds.includes(currentConversation) ? currentConversation : convIds[0];
           setCurrentConversation(convToLoad);
           
           const history = await chatApi.getHistory(userId, convToLoad);
-          console.log('📜 Loaded history:', history);
           setMessages(history);
         } else {
-          // No conversations yet, start with conversation 1
           setCurrentConversation(1);
           setMessages([]);
         }
@@ -85,34 +77,24 @@ function App() {
     };
 
     loadData();
-  }, [userId]); // Reload when userId changes
+  }, [userId]);
 
-  // Poll for pending approvals every 10 seconds
   useEffect(() => {
-    console.log('⏰ Setting up polling for userId:', userId);
     const interval = setInterval(async () => {
-      console.log('⏰ Polling approvals...');
       try {
         const approvals = await chatApi.getPendingApprovals(userId);
-        console.log('⏰ Poll result:', approvals.length, 'approvals');
         setPendingApprovals(approvals);
       } catch (error) {
         console.error('Failed to load pending approvals:', error);
       }
     }, 10000);
     return () => {
-      console.log('🛑 Clearing polling interval');
       clearInterval(interval);
     };
-  }, [userId]); // Zmieniono z [role] na [userId]
+  }, [userId]);
 
-  // Show modal automatically when new approval appears
   useEffect(() => {
-    console.log('🔔 Pending approvals changed:', pendingApprovals.length, 'approvals');
-    console.log('🔔 Current approval:', currentApproval ? currentApproval.id : 'none');
-    
     if (pendingApprovals.length > 0 && !currentApproval) {
-      console.log('✅ Showing modal for approval:', pendingApprovals[0].toolName);
       setCurrentApproval(pendingApprovals[0]);
     }
   }, [pendingApprovals, currentApproval]);
@@ -120,7 +102,6 @@ function App() {
   const loadChatHistory = async () => {
     try {
       const history = await chatApi.getHistory(userId, currentConversation);
-      console.log('📜 Loaded chat history:', history);
       setMessages(history);
     } catch (error) {
       console.error('Failed to load chat history:', error);
@@ -128,16 +109,11 @@ function App() {
   };
 
   const loadPendingApprovals = async () => {
-    console.log('📡 Loading pending approvals for userId:', userId);
     try {
       const approvals = await chatApi.getPendingApprovals(userId);
-      console.log('✅ Loaded approvals:', approvals.length, 'approvals');
-      if (approvals.length > 0) {
-        console.log('📋 Approvals:', approvals.map(a => ({ id: a.id, tool: a.toolName })));
-      }
       setPendingApprovals(approvals);
     } catch (error) {
-      console.error('❌ Failed to load pending approvals:', error);
+      console.error('Failed to load pending approvals:', error);
     }
   };
 
@@ -160,10 +136,8 @@ function App() {
         ragEnabled,
       });
 
-      // Czyszczenie odpowiedzi z "USER:", "ASSISTANT:", "Asysten:" itp.
       let cleanedResponse = response;
       cleanedResponse = cleanedResponse.replace(/^(USER|ASSISTANT|Asysten):\s*/gi, '');
-      // Usuń także z środka tekstu jeśli występują na początku linii
       cleanedResponse = cleanedResponse.replace(/\n(USER|ASSISTANT|Asysten):\s*/gi, '\n');
 
       const assistantMessage: ChatMessageDto = {
@@ -174,7 +148,6 @@ function App() {
 
       setMessages((prev) => [...prev, assistantMessage]);
       
-      // Reload history and pending approvals after message
       setTimeout(() => {
         loadChatHistory();
         loadPendingApprovals();
@@ -183,7 +156,7 @@ function App() {
       console.error('Failed to send message:', error);
       const errorMessage: ChatMessageDto = {
         role: 'ASSISTANT',
-        content: `❌ Błąd: ${error.response?.data?.message || error.message || 'Nie udało się wysłać wiadomości'}`,
+        content: `❌ Error: ${error.response?.data?.message || error.message || 'Failed to send message'}`,
         dateTime: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -213,10 +186,9 @@ function App() {
 
   const handleConversationChange = async (conversationId: number) => {
     setCurrentConversation(conversationId);
-    setCurrentView('chat'); // Przełącz na widok czatu
+    setCurrentView('chat');
     try {
       const history = await chatApi.getHistory(userId, conversationId);
-      console.log('📜 Loaded conversation history:', history);
       setMessages(history);
     } catch (error) {
       console.error('Failed to load conversation:', error);
@@ -225,12 +197,10 @@ function App() {
   };
 
   const handleNewConversation = async () => {
-    // Calculate next conversation ID (max + 1)
     const nextId = conversations.length > 0 ? Math.max(...conversations) + 1 : 1;
     setCurrentConversation(nextId);
     setMessages([]);
     
-    // Update conversations list
     const updatedConversations = [...conversations, nextId];
     setConversations(updatedConversations);
   };

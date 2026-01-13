@@ -14,7 +14,6 @@ interface ChatMessageProps {
 export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, dateTime }) => {
   const isUser = role === 'USER';
 
-  // Jeśli content jest puste lub undefined, nie renderuj
   if (!content || content.trim() === '') {
     return null;
   }

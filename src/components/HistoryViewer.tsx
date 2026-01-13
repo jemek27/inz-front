@@ -9,7 +9,6 @@ interface HistoryViewerProps {
 }
 
 export const HistoryViewer: React.FC<HistoryViewerProps> = ({ messages }) => {
-  // Funkcja do określenia czy wiadomość jest od użytkownika
   const isUserMessage = (msg: ChatMessageDto) => {
     return msg.role === 'USER';
   };
